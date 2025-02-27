@@ -207,6 +207,50 @@
               </jdkToolchain>
             </configuration>
           </execution>
+          <execution>
+            <id>test-jdk18</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <jdkToolchain>
+                <version>18</version>
+              </jdkToolchain>
+            </configuration>
+          </execution>
+          <execution>
+            <id>test-jdk19</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <jdkToolchain>
+                <version>19</version>
+              </jdkToolchain>
+            </configuration>
+          </execution>
+          <execution>
+            <id>test-jdk20</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <jdkToolchain>
+                <version>20</version>
+              </jdkToolchain>
+            </configuration>
+          </execution>
+          <execution>
+            <id>test-jdk21</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <jdkToolchain>
+                <version>21</version>
+              </jdkToolchain>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
