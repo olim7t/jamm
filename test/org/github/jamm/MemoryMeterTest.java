@@ -482,7 +482,7 @@ public class MemoryMeterTest {
      * Returns the package-private field {@code ReferenceQueue.NULL} (which is the default used when
      * a Reference is created without an explicit queue).
      * <br/>
-     * In earlier JDK versions, this used to be equivalent to {@code new ReferenceQueue<Object>{}}.
+     * In earlier JDK versions, this used to be equivalent to {@code new ReferenceQueue<Object>()}.
      * However, starting with JDK 19, it uses an optimized implementation that nulls out some
      * internal fields to save space, resulting in a different size.
      */
