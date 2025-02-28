@@ -1,13 +1,16 @@
 package org.github.jamm;
 
 import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.function.Predicate;
 
+import org.github.jamm.accessors.FieldAccessor;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -149,16 +152,17 @@ public class MemoryMeterTest {
         assertEquals(refShallowSize,  meterIgnoring.measureDeep(ref));
 
         // SoftReference + deep queue + referent
-        long deepSize = refShallowSize + meterMeasuring.measureDeep(new ReferenceQueue<Object>()) + meterMeasuring.measure(new Date());
-        assertEquals(deepSize,  meterMeasuring.measureDeep(ref));
+        ReferenceQueue<?> nullReferenceQueue = getNullReferenceQueue();
+        long deepSize = refShallowSize + meterMeasuring.measureDeep(nullReferenceQueue) + meterMeasuring.measure(new Date());
+        assertEquals(deepSize, meterMeasuring.measureDeep(ref));
 
         HasReferenceField hasReferenceField = new HasReferenceField(ref);
         long hasReferenceFieldShallowSize = meterIgnoring.measure(hasReferenceField);
         assertEquals(refShallowSize + hasReferenceFieldShallowSize, meterIgnoring.measureDeep(hasReferenceField));
 
         // HasReferenceField + SoftReference + deep queue + referent
-        deepSize = hasReferenceFieldShallowSize + refShallowSize + meterMeasuring.measureDeep(new ReferenceQueue<Object>()) + meterMeasuring.measure(new Date());
-        assertEquals(deepSize,  meterMeasuring.measureDeep(hasReferenceField));
+        deepSize = hasReferenceFieldShallowSize + refShallowSize + meterMeasuring.measureDeep(nullReferenceQueue) + meterMeasuring.measure(new Date());
+        assertEquals(deepSize, meterMeasuring.measureDeep(hasReferenceField));
 
         // Test ReferenceQueue measurement with one object
         ReferenceQueue<Object> queue = new ReferenceQueue<>();
@@ -179,9 +183,9 @@ public class MemoryMeterTest {
 
         Assert.assertTrue(p.isEnqueued());
 
-        long queueShallowSize = meterIgnoring.measure(queue);
-        long lockSize = meterIgnoring.measure(new Object()); // The ReferenceQueue lock field has the same size as an empty object.
-        assertEquals(queueShallowSize + lockSize,  meterIgnoring.measureDeep(queue));
+        // The queue contains one reference that isn't strong (so ignored), so it should measure the
+        // same as an empty queue.
+        assertEquals(meterIgnoring.measureDeep(new ReferenceQueue<>()), meterIgnoring.measureDeep(queue));
 
         assertEquals(p, queue.poll());
     }
@@ -471,6 +475,24 @@ public class MemoryMeterTest {
             hasAddChildrenBeenUsed = true;
 
             stack.pushObject(this, "name", name);
+        }
+    }
+
+    /**
+     * Returns the package-private field {@code ReferenceQueue.NULL} (which is the default used when
+     * a Reference is created without an explicit queue).
+     * <br/>
+     * In earlier JDK versions, this used to be equivalent to {@code new ReferenceQueue<Object>{}}.
+     * However, starting with JDK 19, it uses an optimized implementation that nulls out some
+     * internal fields to save space, resulting in a different size.
+     */
+    private static ReferenceQueue<?> getNullReferenceQueue() {
+        try {
+            SoftReference<Object> ref = new SoftReference<>(null);
+            Field field = Reference.class.getDeclaredField("queue");
+            return (ReferenceQueue<?>) FieldAccessor.newInstance().getFieldValue(ref, field);
+        } catch (NoSuchFieldException e) {
+            throw new AssertionError("Expected to access Reference.queue via reflection", e);
         }
     }
 }
